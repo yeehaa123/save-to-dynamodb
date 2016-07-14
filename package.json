@@ -1,0 +1,26 @@
+{
+    "name": "save-to-dynamodb",
+  "version": "0.0.1",
+    "description": "save items to dynamodb",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "yeehaa123",
+  "license": "MIT",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "dependencies": {
+    "node-lambda": "^0.8.6",
+    "twit": "^2.2.4"
+  },
+  "scripts": {
+    "setup": "npm install && ./node_modules/node-lambda/bin/node-lambda setup",
+    "start": "./node_modules/node-lambda/bin/node-lambda run",
+    "deploy": "./node_modules/node-lambda/bin/node-lambda deploy -e development -f development.env",
+    "deploy-prod": "./node_modules/node-lambda/bin/node-lambda deploy -e production -f production.env"
+  }
+}
