@@ -44,9 +44,9 @@
     (cb error nil)))
 
 (defn ^:export handler [event context cb]
-  #_(println "Event: " (.stringify js/JSON (clj->js event)) "\n")
+  (println "Event: " (.stringify js/JSON (clj->js event)) "\n")
   (let [incoming-action (action/convert event)]
-    #_(println "Incoming: " (.stringify js/JSON (clj->js incoming-action)) "\n")
+    (println "Incoming: " (.stringify js/JSON (clj->js incoming-action)) "\n")
     (if (spec/valid? ::specs/action incoming-action)
       (go
         (let [{:keys [payload type]} (spec/conform ::specs/action incoming-action)
