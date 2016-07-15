@@ -25,7 +25,8 @@
   {:RequestItems
    {table-name (map (fn [item]
                       {:PutRequest
-                       {:Item (marshal item)}}) items)}})
+                       {:Item (marshal item)}})
+                    (into #{} items))}})
 
 (defn save [table-name items]
   (let [c (chan)
@@ -43,13 +44,14 @@
     (cb error nil)))
 
 (defn ^:export handler [event context cb]
-  (println "Event: " (.stringify js/JSON (clj->js event)) "\n")
+  #_(println "Event: " (.stringify js/JSON (clj->js event)) "\n")
   (let [incoming-action (action/convert event)]
-    (println "Incoming: " (.stringify js/JSON (clj->js incoming-action)) "\n")
+    #_(println "Incoming: " (.stringify js/JSON (clj->js incoming-action)) "\n")
     (if (spec/valid? ::specs/action incoming-action)
       (go
         (let [{:keys [payload type]} (spec/conform ::specs/action incoming-action)
               response (<! (apply save payload))]
+          (println "Response: " (.stringify js/JSON (clj->js response)) "\n")
           (match [response]
                  [{:success _}] (cb nil (.stringify js/JSON (clj->js response)))
                  [{:error _}] (cb (.stringify js/JSON (clj->js response)) nil))))
