@@ -5,6 +5,7 @@
             [cljs.spec :as spec]
             [cljs.core.async :refer [<! put! close! chan >!]]
             [cljs.core.match :refer-macros [match]]
+            [clojure.walk :as walk]
             [clojure.string :as str])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
@@ -12,11 +13,19 @@
 (def AWS (node/require "aws-sdk"))
 (def dynamo (AWS.DynamoDB.DocumentClient.))
 
+(defn replaceEmptyStrings [obj]
+  (walk/postwalk-replace {"" nil} obj))
+
+(defn marshal [item]
+  (-> item
+      replaceEmptyStrings
+      clj->js))
+
 (defn create-query [table-name items]
   {:RequestItems
    {table-name (map (fn [item]
                       {:PutRequest
-                       {:Item item}}) items)}})
+                       {:Item (marshal item)}}) items)}})
 
 (defn save [table-name items]
   (let [c (chan)

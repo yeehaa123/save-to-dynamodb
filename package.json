@@ -1,7 +1,7 @@
 {
-    "name": "save-to-dynamodb",
+  "name": "save-to-dynamodb",
   "version": "0.0.1",
-    "description": "save items to dynamodb",
+  "description": "save items to dynamodb",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -14,6 +14,7 @@
   },
   "homepage": "",
   "dependencies": {
+    "dynamodb-marshaler": "^2.0.0",
     "node-lambda": "^0.8.6",
     "twit": "^2.2.4"
   },
