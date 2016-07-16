@@ -29,6 +29,7 @@
 (spec/def ::resources (spec/* ::resource))
 
 (spec/def ::payload (spec/or :resource  ::resource
+                             :tweets    ::tweets
                              :bookmarks ::bookmarks
                              :resources ::resources
                              :user-data ::user-data))
