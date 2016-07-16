@@ -1,8 +1,6 @@
 (ns app.message
-  (:require [cljs.nodejs :as node]
-            [app.specs :as specs]
-            [cljs.spec :as spec]
-            [cljs.core.async :refer [<! put! close! chan >!]])
+  (:require [cljs.core.async :refer [>! chan]]
+            [cljs.nodejs :as node])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def ^:private AWS (node/require "aws-sdk"))

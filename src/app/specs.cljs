@@ -1,6 +1,5 @@
 (ns app.specs
-  (:require [cljs.spec :as spec]
-            [clojure.string :as str]))
+  (:require [cljs.spec :as spec]))
 
 (spec/def ::timestamp string?)
 (spec/def ::user string?)

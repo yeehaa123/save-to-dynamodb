@@ -6,7 +6,7 @@
   (.stringify js/JSON (clj->js obj)))
 
 (defn log [msg payload]
-  #_(println msg (stringify payload) "\n"))
+  (println msg (stringify payload) "\n"))
 
 (defn log-error [reason action]
   (let [error (clj->js {:type :error

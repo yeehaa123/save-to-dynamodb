@@ -1,7 +1,7 @@
 (ns app.db
-  (:require [cljs.nodejs :as node]
-            [app.logger :as logger]
-            [cljs.core.async :refer [<! put! close! chan >!]]
+  (:require [app.logger :as logger]
+            [cljs.core.async :refer [>! chan]]
+            [cljs.nodejs :as node]
             [clojure.walk :as walk])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
@@ -23,13 +23,8 @@
                        {:Item (marshal item)}})
                     (into #{} items))}})
 
-(defn save [table-name items]
-  (let [c (chan)
-        hashkey (table-name {:resources :url
-                             :tweets :id
-                             :bookmarks :timestamp})
-        unique-items (vals (into {} (map (fn [item] [(hashkey item) item]) items)))
-        query (create-query table-name unique-items)]
+(defn -save [query]
+  (let [c (chan)]
     (.batchWrite dynamo (clj->js query) #(go
                                            (let [response (if %1
                                                             {:error %1}
@@ -37,3 +32,14 @@
                                              (logger/log "Response: " response)
                                              (>! c response))))
     c))
+
+(def hashkeys {:resources :url
+               :tweets :id
+               :bookmarks :timestamp})
+
+(defn save [table-name items]
+  (let [c (chan)
+        hashkey (table-name hashkeys)
+        unique-items (vals (into {} (map (fn [item] [(hashkey item) item]) items)))
+        query (create-query table-name unique-items)]
+    (-save query)))

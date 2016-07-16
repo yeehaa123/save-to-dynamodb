@@ -1,14 +1,9 @@
 (ns app.core
-  (:require [cljs.nodejs :as node]
-            [app.action :as action]
+  (:require [app.action :as action]
             [app.db :as db]
-            [app.logger :as logger]
-            [app.specs :as specs]
-            [cljs.spec :as spec]
-            [cljs.core.async :refer [<! put! close! chan >!]]
+            [cljs.core.async :refer [<!]]
             [cljs.core.match :refer-macros [match]]
-            [clojure.walk :as walk]
-            [clojure.string :as str])
+            [cljs.nodejs :as node])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (node/enable-util-print!)
@@ -20,7 +15,6 @@
              [{:success _}] (cb nil "Save Succeeded")
              [{:error _}] (cb "Save Failed" nil)))
     (cb "Invalid Event" nil)))
-
 
 (defn -main [] identity)
 (set! *main-cli-fn* -main)
