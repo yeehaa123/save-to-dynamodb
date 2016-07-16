@@ -13,23 +13,13 @@
 
 (node/enable-util-print!)
 
-(defn handle-error [reason action]
-  (let [error (clj->js {:type :error
-                        :error reason
-                        :payload (spec/explain-data ::specs/action action)})]
-    (logger/log "Error "error)))
-
 (defn ^:export handler [event context cb]
-  (let [incoming-action (action/convert event)]
+  (if-let [{:keys [payload type]} (action/convert event)]
     (go
-      (if (spec/valid? ::specs/action incoming-action)
-        (let [{:keys [payload type]} (spec/conform ::specs/action incoming-action)
-              response               (<! (apply db/save payload))]
-          (match [response]
-                 [{:success _}] (cb nil (logger/stringify response))
-                 [{:error _}] (cb (logger/stringify response) nil)))
-        (let [error (<! (handle-error :invalid-incoming-action incoming-action))]
-          (cb error nil))))))
+      (match [(<! (apply db/save payload))]
+             [{:success _}] (cb nil "Save Succeeded")
+             [{:error _}] (cb "Save Failed" nil)))
+    (cb "Invalid Event" nil)))
 
 
 (defn -main [] identity)

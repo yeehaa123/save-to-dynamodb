@@ -32,8 +32,11 @@
         event-source (extract-event-source (first records))
         action {:payload payload
                 :type event-source}]
-    (logger/log "Incoming: " action)
-    action))
+    (if (spec/valid? ::specs/action action)
+      (do
+        (logger/log "Incoming: " action)
+        (spec/conform ::specs/action action))
+      (logger/log-error :invalid-incoming-action action))))
 
 (defn create [tweets]
   {:type "mined-tweets"
