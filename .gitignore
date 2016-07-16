@@ -34,6 +34,7 @@ node_modules
 production.env
 staging.env
 development.env
+.nrepl-port
 
 local.sh
 .env
