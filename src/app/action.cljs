@@ -1,6 +1,7 @@
 (ns app.action
   (:require [cljs.spec :as spec]
             [app.specs :as specs]
+            [app.logger :as logger]
             [clojure.string :as str]))
 
 (defn json->clj [data]
@@ -25,12 +26,14 @@
 (spec/fdef convert :ret ::specs/action)
 
 (defn convert [event]
+  (logger/log "Event: " event)
   (let [records (:Records (js->clj event :keywordize-keys true))
         payload (extract-payload records)
         event-source (extract-event-source (first records))
-        event {:payload payload
-               :type event-source}]
-    event))
+        action {:payload payload
+                :type event-source}]
+    (logger/log "Incoming: " action)
+    action))
 
 (defn create [tweets]
   {:type "mined-tweets"

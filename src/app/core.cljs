@@ -1,6 +1,8 @@
 (ns app.core
   (:require [cljs.nodejs :as node]
             [app.action :as action]
+            [app.db :as db]
+            [app.logger :as logger]
             [app.specs :as specs]
             [cljs.spec :as spec]
             [cljs.core.async :refer [<! put! close! chan >!]]
@@ -10,56 +12,25 @@
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (node/enable-util-print!)
-(def AWS (node/require "aws-sdk"))
-(def dynamo (AWS.DynamoDB.DocumentClient.))
 
-(defn replaceEmptyStrings [obj]
-  (walk/postwalk-replace {"" nil} obj))
-
-(defn marshal [item]
-  (-> item
-      replaceEmptyStrings
-      clj->js))
-
-(defn create-query [table-name items]
-  {:RequestItems
-   {table-name (map (fn [item]
-                      {:PutRequest
-                       {:Item (marshal item)}})
-                    (into #{} items))}})
-
-(defn save [table-name items]
-  (let [c (chan)
-        hashkey (table-name {:resources :url
-                             :tweets :id
-                             :bookmarks :timestamp})
-        unique-items (vals (into {} (map (fn [item] [(hashkey item) item]) items)))
-        query (create-query table-name unique-items)]
-    (.batchWrite dynamo (clj->js query) #(go (>! c (if %1
-                                                     {:error %1}
-                                                     {:success %2}))))
-    c))
-
-(defn handle-error [reason payload cb]
+(defn handle-error [reason action]
   (let [error (clj->js {:type :error
                         :error reason
-                        :payload payload})]
-    (println (.stringify js/JSON error))
-    (cb error nil)))
+                        :payload (spec/explain-data ::specs/action action)})]
+    (logger/log "Error "error)))
 
 (defn ^:export handler [event context cb]
-  #_(println "Event: " (.stringify js/JSON (clj->js event)) "\n")
   (let [incoming-action (action/convert event)]
-    #_(println "Incoming: " (.stringify js/JSON (clj->js incoming-action)) "\n")
-    (if (spec/valid? ::specs/action incoming-action)
-      (go
+    (go
+      (if (spec/valid? ::specs/action incoming-action)
         (let [{:keys [payload type]} (spec/conform ::specs/action incoming-action)
-              response (<! (apply save payload))]
-          (println "Response: " (.stringify js/JSON (clj->js response)) "\n")
+              response               (<! (apply db/save payload))]
           (match [response]
-                 [{:success _}] (cb nil (.stringify js/JSON (clj->js response)))
-                 [{:error _}] (cb (.stringify js/JSON (clj->js response)) nil))))
-    (handle-error :invalid-incoming-action (spec/explain-data ::specs/action incoming-action) cb))))
+                 [{:success _}] (cb nil (logger/stringify response))
+                 [{:error _}] (cb (logger/stringify response) nil)))
+        (let [error (<! (handle-error :invalid-incoming-action incoming-action))]
+          (cb error nil))))))
+
 
 (defn -main [] identity)
 (set! *main-cli-fn* -main)
