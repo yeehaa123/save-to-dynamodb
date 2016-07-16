@@ -30,7 +30,11 @@
 
 (defn save [table-name items]
   (let [c (chan)
-        query (create-query table-name items)]
+        hashkey (table-name {:resources :url
+                             :tweets :id
+                             :bookmarks :timestamp})
+        unique-items (vals (into {} (map (fn [item] [(hashkey item) item]) items)))
+        query (create-query table-name unique-items)]
     (.batchWrite dynamo (clj->js query) #(go (>! c (if %1
                                                      {:error %1}
                                                      {:success %2}))))
