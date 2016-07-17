@@ -1,6 +1,6 @@
 (ns app.db
   (:require [app.logger :as logger]
-            [cljs.core.async :refer [>! chan]]
+            [cljs.core.async :as async :refer [>! chan]]
             [cljs.nodejs :as node]
             [clojure.walk :as walk])
   (:require-macros [cljs.core.async.macros :refer [go]]))
@@ -16,30 +16,23 @@
       replaceEmptyStrings
       clj->js))
 
-(defn create-query [table-name items]
-  {:RequestItems
-   {table-name (map (fn [item]
-                      {:PutRequest
-                       {:Item (marshal item)}})
-                    (into #{} items))}})
+(defn create-query [table-name item]
+  {:TableName table-name
+   :Item item})
 
 (defn -save [query]
   (let [c (chan)]
-    (.batchWrite dynamo (clj->js query) #(go
-                                           (let [response (if %1
-                                                            {:error %1}
-                                                            {:success %2})]
-                                             (logger/log "Response: " response)
-                                             (>! c response))))
+    (.put dynamo (clj->js query) #(go
+                                    (let [response (if %1
+                                                     {:error %1}
+                                                     {:success (:id (:Item query))})]
+                                      (when (= :error response)
+                                        (logger/log "Error Saving Item: " query))
+                                      (>! c response)
+                                      (async/close! c))))
     c))
 
-(def hashkeys {:resources :url
-               :tweets :id
-               :bookmarks :timestamp})
-
 (defn save [table-name items]
-  (let [c (chan)
-        hashkey (table-name hashkeys)
-        unique-items (vals (into {} (map (fn [item] [(hashkey item) item]) items)))
-        query (create-query table-name unique-items)]
-    (-save query)))
+  (let [queries (map #(create-query table-name %1) items)
+        query-chans (async/merge (map -save queries))]
+    (async/into [] query-chans)))

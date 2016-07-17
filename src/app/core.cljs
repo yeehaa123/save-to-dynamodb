@@ -11,9 +11,10 @@
 (defn ^:export handler [event context cb]
   (if-let [{:keys [payload type]} (action/convert event)]
     (go
-      (match [(<! (apply db/save payload))]
-             [{:success _}] (cb nil "Save Succeeded")
-             [{:error _}] (cb "Save Failed" nil)))
+      (let [errors (filter :error (<! (apply db/save payload)))]
+        (if (empty? errors)
+          (cb nil "Save Succeeded")
+          (cb "Errors Saving" nil))))
     (cb "Invalid Event" nil)))
 
 (defn -main [] identity)
